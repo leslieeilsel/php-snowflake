@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the godruoyi/php-snowflake.
  *
@@ -14,13 +16,13 @@ use Godruoyi\Snowflake\Snowflake;
 
 class DiffWorkIdBatchTest extends TestCase
 {
-    public function testDissWorkID()
+    public function test_diss_work_id(): void
     {
         $snowflake = new Snowflake(1, 1);
 
         $ids = [];
 
-        for ($i = 0; $i < 10000; ++$i) {
+        for ($i = 0; $i < 10000; $i++) {
             $id = $snowflake->id();
 
             $ids[$id] = 1;
@@ -28,12 +30,12 @@ class DiffWorkIdBatchTest extends TestCase
 
         $snowflake = new Snowflake(1, 2);
 
-        for ($j = 0; $j < 10000; ++$j) {
+        for ($j = 0; $j < 10000; $j++) {
             $id = $snowflake->id();
 
             $ids[$id] = 1;
         }
 
-        $this->assertTrue(20000 === count($ids));
+        $this->assertTrue(count($ids) === 20000);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the godruoyi/php-snowflake.
  *
@@ -11,19 +13,31 @@
 namespace Tests;
 
 use Godruoyi\Snowflake\RandomSequenceResolver;
+use Godruoyi\Snowflake\Snowflake;
 
 class RandomSequenceResolverTest extends TestCase
 {
-    public function testBasic()
+    public function test_basic(): void
     {
         $random = new RandomSequenceResolver();
+        $seqs = [];
 
-        $this->assertTrue(0 === $random->sequence(1));
-        $this->assertTrue(1 === $random->sequence(1));
-        $this->assertTrue(0 === $random->sequence(2));
-        $this->assertTrue(0 === $random->sequence(3));
-        $this->assertTrue(1 === $random->sequence(3));
-        $this->assertTrue(0 === $random->sequence(4));
-        $this->assertTrue(1 === $random->sequence(4));
+        for ($i = 0; $i < Snowflake::MAX_SEQUENCE_SIZE; $i++) {
+            $seqs[$random->sequence(0)] = true;
+        }
+
+        $this->assertCount(Snowflake::MAX_SEQUENCE_SIZE, $seqs);
+    }
+
+    public function test_can_generate_unique_id_by_snowflake(): void
+    {
+        $snowflake = new Snowflake(1, 1);
+        $seqs = [];
+
+        for ($i = 0; $i < Snowflake::MAX_SEQUENCE_SIZE; $i++) {
+            $seqs[$snowflake->id()] = true;
+        }
+
+        $this->assertCount(Snowflake::MAX_SEQUENCE_SIZE, $seqs);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the godruoyi/php-snowflake.
  *
@@ -10,69 +12,71 @@
 
 namespace Tests;
 
+use Closure;
 use Godruoyi\Snowflake\RandomSequenceResolver;
 use Godruoyi\Snowflake\SequenceResolver;
 use Godruoyi\Snowflake\Snowflake;
 
 class SnowflakeTest extends TestCase
 {
-    public function testBasic()
+    public function test_basic(): void
     {
         $snowflake = new Snowflake();
 
-        $this->assertTrue(!empty($snowflake->id()));
+        $this->assertTrue(! empty($snowflake->id()));
         $this->assertTrue(strlen($snowflake->id()) <= 19);
     }
 
-    public function testInvalidDatacenterIDAndWorkID() {
+    public function test_invalid_datacenter_id_and_work_id(): void
+    {
         $snowflake = new Snowflake(-1, -1);
 
         $dataID = $this->invokeProperty($snowflake, 'datacenter');
-        $workID = $this->invokeProperty($snowflake, 'workerid');
+        $workID = $this->invokeProperty($snowflake, 'workerId');
         $this->assertTrue($workID >= 0 && $workID <= 31);
         $this->assertTrue($dataID >= 0 && $dataID <= 31);
 
         $snowflake = new Snowflake(33, 33);
         $dataID = $this->invokeProperty($snowflake, 'datacenter');
-        $workID = $this->invokeProperty($snowflake, 'workerid');
+        $workID = $this->invokeProperty($snowflake, 'workerId');
         $this->assertTrue($workID >= 0 && $workID <= 31);
         $this->assertTrue($dataID >= 0 && $dataID <= 31);
 
         $snowflake = new Snowflake();
         $dataID = $this->invokeProperty($snowflake, 'datacenter');
-        $workID = $this->invokeProperty($snowflake, 'workerid');
+        $workID = $this->invokeProperty($snowflake, 'workerId');
         $this->assertTrue($workID >= 0 && $workID <= 31);
         $this->assertTrue($dataID >= 0 && $dataID <= 31);
     }
 
-    public function testWorkIDAndDataCenterId()
+    public function test_work_id_and_data_center_id(): void
     {
         $snowflake = new Snowflake(-1, -1);
 
-        $this->assertTrue(!empty($snowflake->id()));
+        $this->assertTrue(! empty($snowflake->id()));
         $this->assertTrue(strlen($snowflake->id()) <= 19);
 
         $snowflake = new Snowflake(33, -1);
 
-        $this->assertTrue(!empty($snowflake->id()));
+        $this->assertTrue(! empty($snowflake->id()));
         $this->assertTrue(strlen($snowflake->id()) <= 19);
 
         $snowflake = new Snowflake(1, 2);
 
-        $this->assertTrue(!empty($snowflake->id()));
+        $this->assertTrue(! empty($snowflake->id()));
         $this->assertTrue(strlen($id = $snowflake->id()) <= 19);
 
-        $this->assertTrue(1 === $snowflake->parseId($id, true)['datacenter']);
-        $this->assertTrue(2 === $snowflake->parseId($id, true)['workerid']);
+        $this->assertTrue($snowflake->parseId($id, true)['datacenter'] === 1);
+        $this->assertTrue($snowflake->parseId($id, true)['workerid'] === 2);
 
         $snowflake = new Snowflake(999, 20);
         $id = $snowflake->id();
 
-        $this->assertTrue(999 !== $snowflake->parseId($id, true)['datacenter']);
-        $this->assertTrue(20 === $snowflake->parseId($id, true)['workerid']);
+        $this->assertTrue($snowflake->parseId($id, true)['datacenter'] !== 999);
+        $this->assertTrue($snowflake->parseId($id, true)['workerid'] === 20);
     }
 
-    public function testExtends()
+    public function test_extends(): void
     {
         $snowflake = new Snowflake(999, 20);
         $snowflake->setSequenceResolver(function ($currentTime) {
@@ -81,12 +85,12 @@ class SnowflakeTest extends TestCase
 
         $id = $snowflake->id();
 
-        $this->assertTrue(999 !== $snowflake->parseId($id, true)['datacenter']);
-        $this->assertTrue(999 === $snowflake->parseId($id, true)['sequence']);
-        $this->assertTrue(20 === $snowflake->parseId($id, true)['workerid']);
+        $this->assertTrue($snowflake->parseId($id, true)['datacenter'] !== 999);
+        $this->assertTrue($snowflake->parseId($id, true)['sequence'] === 999);
+        $this->assertTrue($snowflake->parseId($id, true)['workerid'] === 20);
     }
 
-    public function testBatch()
+    public function test_batch(): void
     {
         $snowflake = new Snowflake(999, 20);
         $snowflake->setSequenceResolver(function ($currentTime) {
@@ -94,7 +98,7 @@ class SnowflakeTest extends TestCase
             static $sequence;
 
             if ($lastTime === $currentTime) {
-                ++$sequence;
+                $sequence++;
             } else {
                 $sequence = 0;
             }
@@ -106,16 +110,16 @@ class SnowflakeTest extends TestCase
 
         $datas = [];
 
-        for ($i = 0; $i < 10000; ++$i) {
+        for ($i = 0; $i < 10000; $i++) {
             $id = $snowflake->id();
 
             $datas[$id] = 1;
         }
 
-        $this->assertTrue(10000 === count($datas));
+        $this->assertTrue(count($datas) === 10000);
     }
 
-    public function testParseId()
+    public function test_parse_id(): void
     {
         $snowflake = new Snowflake(999, 20);
         $data = $snowflake->parseId('1537200202186752', false);
@@ -126,44 +130,44 @@ class SnowflakeTest extends TestCase
 
         $data = $snowflake->parseId('1537200202186752', true);
 
-        $this->assertTrue(0 === $data['workerid']);
-        $this->assertTrue(0 === $data['datacenter']);
-        $this->assertTrue(0 === $data['sequence']);
+        $this->assertTrue($data['workerid'] === 0);
+        $this->assertTrue($data['datacenter'] === 0);
+        $this->assertTrue($data['sequence'] === 0);
         $this->assertTrue($data['timestamp'] > 0);
 
         $snowflake = new Snowflake(2, 3);
         $id = $snowflake->id();
         $payloads = $snowflake->parseId($id, true);
 
-        $this->assertTrue(2 === $payloads['datacenter']);
-        $this->assertTrue(3 === $payloads['workerid']);
-        $this->assertTrue(0 === $payloads['sequence']);
+        $this->assertTrue($payloads['datacenter'] === 2);
+        $this->assertTrue($payloads['workerid'] === 3);
+        $this->assertLessThan(Snowflake::MAX_SEQUENCE_SIZE, $payloads['sequence']);
 
         $payloads = $snowflake->parseId('0');
-        $this->assertTrue('' == $payloads['timestamp'] || false == $payloads['timestamp']);
+        $this->assertTrue($payloads['timestamp'] == '' || $payloads['timestamp'] == false);
         $this->assertSame($payloads['workerid'], '0');
         $this->assertSame($payloads['datacenter'], '0');
         $this->assertSame($payloads['sequence'], '0');
     }
 
-    public function testGetCurrentMicrotime()
+    public function testget_current_millisecond(): void
     {
         $snowflake = new Snowflake(999, 20);
         $now = floor(microtime(true) * 1000) | 0;
-        $time = $snowflake->getCurrentMicrotime();
+        $time = $snowflake->getCurrentMillisecond();
 
         $this->assertTrue($time >= $now);
     }
 
-    public function testSetStartTimeStamp()
+    public function test_set_start_time_stamp(): void
     {
         $snowflake = new Snowflake(999, 20);
 
         $snowflake->setStartTimeStamp(1);
-        $this->assertTrue(1 === $snowflake->getStartTimeStamp());
+        $this->assertTrue($snowflake->getStartTimeStamp() === 1);
     }
 
-    public function testSetStartTimeStampMaxValueIsOver()
+    public function test_set_start_time_stamp_max_value_is_over(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('The current microtime - starttime is not allowed to exceed -1 ^ (-1 << 41), You can reset the start time to fix this');
@@ -172,7 +176,7 @@ class SnowflakeTest extends TestCase
         $snowflake->setStartTimeStamp(strtotime('1900-01-01') * 1000);
     }
 
-    public function testSetStartTimeStampCannotMoreThatCurrentTime()
+    public function test_set_start_time_stamp_cannot_more_that_current_time(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('The start time cannot be greater than the current time');
@@ -181,7 +185,7 @@ class SnowflakeTest extends TestCase
         $snowflake->setStartTimeStamp(strtotime('3000-01-01') * 1000);
     }
 
-    public function testGetStartTimeStamp()
+    public function test_get_start_time_stamp(): void
     {
         $snowflake = new Snowflake(999, 20);
         $defaultTime = '2019-08-08 08:08:08';
@@ -189,23 +193,24 @@ class SnowflakeTest extends TestCase
         $this->assertTrue($snowflake->getStartTimeStamp() === (strtotime($defaultTime) * 1000));
 
         $snowflake->setStartTimeStamp(1);
-        $this->assertTrue(1 === $snowflake->getStartTimeStamp());
+        $this->assertTrue($snowflake->getStartTimeStamp() === 1);
     }
 
-    public function testcallResolver()
+    public function testcall_resolver(): void
     {
         $snowflake = new Snowflake(999, 20);
         $snowflake->setSequenceResolver(function ($currentTime) {
             return 999;
         });
 
+        /** @var Closure $seq */
         $seq = $snowflake->getSequenceResolver();
 
-        $this->assertTrue($seq instanceof \Closure);
-        $this->assertTrue(999 === $seq(0));
+        $this->assertTrue($seq instanceof Closure);
+        $this->assertTrue($seq(0) === 999);
     }
 
-    public function testGetSequenceResolver()
+    public function test_get_sequence_resolver(): void
     {
         $snowflake = new Snowflake(999, 20);
         $this->assertTrue(is_null($snowflake->getSequenceResolver()));
@@ -217,14 +222,14 @@ class SnowflakeTest extends TestCase
         $this->assertTrue(is_callable($snowflake->getSequenceResolver()));
     }
 
-    public function testGetDefaultSequenceResolver()
+    public function test_get_default_sequence_resolver(): void
     {
         $snowflake = new Snowflake(999, 20);
         $this->assertInstanceOf(SequenceResolver::class, $snowflake->getDefaultSequenceResolver());
         $this->assertInstanceOf(RandomSequenceResolver::class, $snowflake->getDefaultSequenceResolver());
     }
 
-    public function testException()
+    public function test_exception(): void
     {
         $snowflake = new Snowflake();
 
@@ -239,13 +244,14 @@ class SnowflakeTest extends TestCase
         $snowflake->setStartTimeStamp(strtotime('1900-01-01') * 1000);
     }
 
-    public function testGenerateID() {
+    public function test_generate_id(): void
+    {
         $snowflake = new Snowflake(1, 1);
         $snowflake->setStartTimeStamp(1);
         $snowflake->setSequenceResolver(function ($t) {
             global $startTime;
 
-            if (!$startTime) {
+            if (! $startTime) {
                 $startTime = time();
             }
 
@@ -253,6 +259,7 @@ class SnowflakeTest extends TestCase
             if (time() - $startTime <= 5) {
                 return 4096;
             }
+
             return 1;
         });
 
